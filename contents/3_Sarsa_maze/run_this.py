@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Sarsa is a online updating method for Reinforcement learning.
 

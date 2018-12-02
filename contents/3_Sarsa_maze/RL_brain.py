@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 This part of code is the Q learning brain, which is a brain of the agent.
 All decisions are made in here.
@@ -10,7 +13,8 @@ import pandas as pd
 
 
 class RL(object):
-    def __init__(self, action_space, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9):
+
+    def __init__(self, action_space, learning_rate=0.01, reward_decay=0.9, e_greedy=0.1):
         self.actions = action_space  # a list
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -32,9 +36,9 @@ class RL(object):
     def choose_action(self, observation):
         self.check_state_exist(observation)
         # action selection
-        if np.random.rand() < self.epsilon:
+        if np.random.rand() < 1 - self.epsilon:
             # choose best action
-            state_action = self.q_table.loc[observation, :]
+            state_action = self.q_table.loc[observation]
             # some actions may have the same value, randomly choose on in these actions
             action = np.random.choice(state_action[state_action == np.max(state_action)].index)
         else:
