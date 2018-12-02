@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 A simple example for Reinforcement Learning using table lookup Q-learning method.
 An agent "o" is on the left of a 1 dimensional world, the treasure is on the rightmost location.
@@ -15,32 +18,42 @@ np.random.seed(2)  # reproducible
 
 N_STATES = 6   # the length of the 1 dimensional world
 ACTIONS = ['left', 'right']     # available actions
-EPSILON = 0.9   # greedy police
+EPSILON = 0.1   # greedy policy
 ALPHA = 0.1     # learning rate
 GAMMA = 0.9    # discount factor
 MAX_EPISODES = 13   # maximum episodes
 FRESH_TIME = 0.3    # fresh time for one move
 
 
+# 根据状态数目以及行为构造Q-Table
 def build_q_table(n_states, actions):
+
+    # 相当于State直接使用数字表示
     table = pd.DataFrame(
         np.zeros((n_states, len(actions))),     # q_table initial values
         columns=actions,    # actions's name
     )
-    # print(table)    # show table
+
     return table
 
-
+# 根据当前状态以及Q-Table选取行为
 def choose_action(state, q_table):
-    # This is how to choose an action
-    state_actions = q_table.iloc[state, :]
-    if (np.random.uniform() > EPSILON) or ((state_actions == 0).all()):  # act non-greedy or state-action have no value
+
+    # 由于状态直接使用数字表示，所以这里采用.iloc方式进行索引
+    state_actions = q_table.iloc[state]
+
+    # epsilon-max 方法进行抽样
+    # 如果当前恰好落在epsilon范围内，或者刚开始所有的state_actions都是0
+    if (np.random.uniform() > 1 - EPSILON) or ((state_actions == 0).all()):  # act non-greedy or state-action have no value
+        # 随机选取行为
         action_name = np.random.choice(ACTIONS)
     else:   # act greedy
+        # idxmax是返回最大值的索引（不一定是数字），argmax在将来会返回最大值的数字索引
         action_name = state_actions.idxmax()    # replace argmax to idxmax as argmax means a different function in newer version of pandas
+
     return action_name
 
-
+# 游戏规则所确定的环境
 def get_env_feedback(S, A):
     # This is how agent will interact with the environment
     if A == 'right':    # move right
@@ -58,7 +71,7 @@ def get_env_feedback(S, A):
             S_ = S - 1
     return S_, R
 
-
+# 在console上显示当前状态
 def update_env(S, episode, step_counter):
     # This is how environment be updated
     env_list = ['-']*(N_STATES-1) + ['T']   # '---------T' our environment
@@ -88,7 +101,7 @@ def rl():
             S_, R = get_env_feedback(S, A)  # take action & get next state and reward
             q_predict = q_table.loc[S, A]
             if S_ != 'terminal':
-                q_target = R + GAMMA * q_table.iloc[S_, :].max()   # next state is not terminal
+                q_target = R + GAMMA * q_table.iloc[S_].max()   # next state is not terminal
             else:
                 q_target = R     # next state is terminal
                 is_terminated = True    # terminate this episode
