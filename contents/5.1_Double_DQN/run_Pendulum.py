@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Double DQN & Natural DQN comparison,
 The Pendulum example.
@@ -16,7 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-
+# 这里直接调用了gym的环境
 env = gym.make('Pendulum-v0')
 env = env.unwrapped
 env.seed(1)
@@ -27,14 +30,15 @@ sess = tf.Session()
 with tf.variable_scope('Natural_DQN'):
     natural_DQN = DoubleDQN(
         n_actions=ACTION_SPACE, n_features=3, memory_size=MEMORY_SIZE,
-        e_greedy_increment=0.001, double_q=False, sess=sess
+        e_greedy_reduction=0.001, double_q=False, sess=sess
     )
 
 with tf.variable_scope('Double_DQN'):
     double_DQN = DoubleDQN(
         n_actions=ACTION_SPACE, n_features=3, memory_size=MEMORY_SIZE,
-        e_greedy_increment=0.001, double_q=True, sess=sess, output_graph=True)
+        e_greedy_reduction=0.001, double_q=True, sess=sess, output_graph=True)
 
+# 只更新全剧变量
 sess.run(tf.global_variables_initializer())
 
 
@@ -63,6 +67,8 @@ def train(RL):
 
         observation = observation_
         total_steps += 1
+
+    # 返回一个表征训练效果的值
     return RL.q
 
 q_natural = train(natural_DQN)

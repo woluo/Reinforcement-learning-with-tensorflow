@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 This part of code is the Q learning brain, which is a brain of the agent.
 All decisions are made in here.
@@ -10,7 +13,7 @@ import pandas as pd
 
 
 class RL(object):
-    def __init__(self, action_space, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9):
+    def __init__(self, action_space, learning_rate=0.01, reward_decay=0.9, e_greedy=0.1):
         self.actions = action_space  # a list
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -32,7 +35,7 @@ class RL(object):
     def choose_action(self, observation):
         self.check_state_exist(observation)
         # action selection
-        if np.random.rand() < self.epsilon:
+        if np.random.rand() < 1 - self.epsilon:
             # choose best action
             state_action = self.q_table.loc[observation, :]
             # some actions may have the same value, randomly choose on in these actions
@@ -47,12 +50,14 @@ class RL(object):
 
 
 # backward eligibility traces
+# 这里SARSA lambda我还不怎么清楚
 class SarsaLambdaTable(RL):
-    def __init__(self, actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9, trace_decay=0.9):
+    def __init__(self, actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.1, trace_decay=0.9):
         super(SarsaLambdaTable, self).__init__(actions, learning_rate, reward_decay, e_greedy)
 
         # backward view, eligibility trace.
         self.lambda_ = trace_decay
+        # 初始化eligibility也为空
         self.eligibility_trace = self.q_table.copy()
 
     def check_state_exist(self, state):
@@ -79,9 +84,11 @@ class SarsaLambdaTable(RL):
 
         # increase trace amount for visited state-action pair
 
+        # 这个方法好像是访问就加1，然后再逐渐decay
         # Method 1:
         # self.eligibility_trace.loc[s, a] += 1
 
+        # 这个方法是只有访问这一列后，以前访问的记忆就完全被清除
         # Method 2:
         self.eligibility_trace.loc[s, :] *= 0
         self.eligibility_trace.loc[s, a] = 1
