@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 The DQN improvement: Prioritized Experience Replay (based on https://arxiv.org/abs/1511.05952)
 
@@ -15,6 +18,7 @@ np.random.seed(1)
 tf.set_random_seed(1)
 
 
+# 二叉堆加上每个节点是子节点优先级之和
 class SumTree(object):
     """
     This SumTree code is a modified version and the original code is from:
@@ -24,8 +28,11 @@ class SumTree(object):
     """
     data_pointer = 0
 
+
+    # 初始化优先级队列
     def __init__(self, capacity):
         self.capacity = capacity  # for all priority values
+        # 父节点capacity-1，子节点capacity
         self.tree = np.zeros(2 * capacity - 1)
         # [--------------Parent nodes-------------][-------leaves to recode priority-------]
         #             size: capacity - 1                       size: capacity
@@ -33,6 +40,7 @@ class SumTree(object):
         # [--------------data frame-------------]
         #             size: capacity
 
+    # 以优先级p添加数据data
     def add(self, p, data):
         tree_idx = self.data_pointer + self.capacity - 1
         self.data[self.data_pointer] = data  # update data_frame
@@ -42,14 +50,18 @@ class SumTree(object):
         if self.data_pointer >= self.capacity:  # replace when exceed the capacity
             self.data_pointer = 0
 
+    # 在每次添加一个元素后，须遍历更新优先级
     def update(self, tree_idx, p):
         change = p - self.tree[tree_idx]
         self.tree[tree_idx] = p
         # then propagate the change through tree
+        # 更新这一次的优先级
         while tree_idx != 0:    # this method is faster than the recursive loop in the reference code
             tree_idx = (tree_idx - 1) // 2
             self.tree[tree_idx] += change
 
+    # 获取优先级为v的节点
+    # 在实现的过程中，v可以不是优先级队列中已有的优先级
     def get_leaf(self, v):
         """
         Tree structure and array storage:
@@ -81,18 +93,21 @@ class SumTree(object):
         data_idx = leaf_idx - self.capacity + 1
         return leaf_idx, self.tree[leaf_idx], self.data[data_idx]
 
+    # 在树节点处储存所有优先级之和
     @property
     def total_p(self):
         return self.tree[0]  # the root
 
-
+# 记录行为以及其优先级
 class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
     """
     This Memory class is modified based on the original code from:
     https://github.com/jaara/AI-blog/blob/master/Seaquest-DDQN-PER.py
     """
+    # 这个不是学习中的epsilon，而是这个类的一个内部变量
     epsilon = 0.01  # small amount to avoid zero priority
     alpha = 0.6  # [0~1] convert the importance of TD error to priority
+    # importance sampling参数为什么会变呢
     beta = 0.4  # importance-sampling, from initial value increasing to 1
     beta_increment_per_sampling = 0.001
     abs_err_upper = 1.  # clipped abs error
@@ -100,27 +115,44 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
     def __init__(self, capacity):
         self.tree = SumTree(capacity)
 
+    # 储存当前转变，优先级默认最高
     def store(self, transition):
+
+        # 获取当前树中最大的优先级
         max_p = np.max(self.tree.tree[-self.tree.capacity:])
+        # 如果最大的优先级是0，那么就给这个值一个比较大的初值
         if max_p == 0:
             max_p = self.abs_err_upper
+        # 添加
         self.tree.add(max_p, transition)   # set the max p for new p
 
+    # 从当前树中获得n个样本
     def sample(self, n):
+
+        # 获取指标的形式，储存的形式，以及权重（这是为了平衡因为优先选取的问题）
         b_idx, b_memory, ISWeights = np.empty((n,), dtype=np.int32), np.empty((n, self.tree.data[0].size)), np.empty((n, 1))
+        # 将优先级划分为n份
         pri_seg = self.tree.total_p / n       # priority segment
+        # 更新importance sampling的参数值
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])  # max = 1
 
+        # 最低概率
         min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p     # for later calculate ISweight
+        # 通过均匀优先级来进行抽样
         for i in range(n):
             a, b = pri_seg * i, pri_seg * (i + 1)
             v = np.random.uniform(a, b)
             idx, p, data = self.tree.get_leaf(v)
             prob = p / self.tree.total_p
-            ISWeights[i, 0] = np.power(prob/min_prob, -self.beta)
+            # 这里严格来说不好，应该避免较大的数除以较小的数
+            # 原版：ISWeights[i, 0] = np.power(prob/min_prob, -self.beta)
+            ISWeights[i, 0] = np.power(min_prob/prob, self.beta)
             b_idx[i], b_memory[i, :] = idx, data
+
+        # 返回样本的指标数组，样本的数据数组，样本的权重数组（未经过处理，目前不存在）
         return b_idx, b_memory, ISWeights
 
+    # 更新样本的优先级，第一个参数是树叶子的指标
     def batch_update(self, tree_idx, abs_errors):
         abs_errors += self.epsilon  # convert to abs and avoid 0
         clipped_errors = np.minimum(abs_errors, self.abs_err_upper)
@@ -156,7 +188,7 @@ class DQNPrioritizedReplay:
         self.epsilon_increment = e_greedy_increment
         self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
 
-        self.prioritized = prioritized    # decide to use double q or not
+        self.prioritized = prioritized    # decide to use prioritized or not
 
         self.learn_step_counter = 0
 
@@ -165,8 +197,10 @@ class DQNPrioritizedReplay:
         e_params = tf.get_collection('eval_net_params')
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
+        # 使用优先级队列来储存所有行为
         if self.prioritized:
             self.memory = Memory(capacity=memory_size)
+        # 否则就使用正常方法
         else:
             self.memory = np.zeros((self.memory_size, n_features*2+2))
 
@@ -207,8 +241,11 @@ class DQNPrioritizedReplay:
             self.q_eval = build_layers(self.s, c_names, n_l1, w_initializer, b_initializer, True)
 
         with tf.variable_scope('loss'):
+            # 加一个权重进行求和
             if self.prioritized:
+                # 这里是求TD-error的绝对值，用于更新整个树的优先级
                 self.abs_errors = tf.reduce_sum(tf.abs(self.q_target - self.q_eval), axis=1)    # for updating Sumtree
+                # 这里加权求和，使用WIS，参见那篇线性的文献
                 self.loss = tf.reduce_mean(self.ISWeights * tf.squared_difference(self.q_target, self.q_eval))
             else:
                 self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
@@ -260,6 +297,7 @@ class DQNPrioritizedReplay:
 
         q_target = q_eval.copy()
         batch_index = np.arange(self.batch_size, dtype=np.int32)
+        # 将指标转化为整数，防止索引出错
         eval_act_index = batch_memory[:, self.n_features].astype(int)
         reward = batch_memory[:, self.n_features + 1]
 
