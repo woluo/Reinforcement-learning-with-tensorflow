@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 The Dueling DQN based on this paper: https://arxiv.org/abs/1511.06581
 
@@ -68,6 +71,7 @@ class DuelingDQN:
                 l1 = tf.nn.relu(tf.matmul(s, w1) + b1)
 
             if self.dueling:
+                # 主要区别就是最后是不是用两个全连接层
                 # Dueling DQN
                 with tf.variable_scope('Value'):
                     w2 = tf.get_variable('w2', [n_l1, 1], initializer=w_initializer, collections=c_names)
@@ -80,6 +84,7 @@ class DuelingDQN:
                     self.A = tf.matmul(l1, w2) + b2
 
                 with tf.variable_scope('Q'):
+                    # 这里采用文章中提到的均值A
                     out = self.V + (self.A - tf.reduce_mean(self.A, axis=1, keep_dims=True))     # Q = V(s) + A(s,a)
             else:
                 with tf.variable_scope('Q'):
