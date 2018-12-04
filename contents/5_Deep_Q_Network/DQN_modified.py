@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 This part of code is the Deep Q Network (DQN) brain.
 
@@ -46,6 +49,7 @@ class DeepQNetwork:
         self.learn_step_counter = 0
 
         # initialize zero memory [s, a, r, s_]
+        # 因为action和reward各占一维
         self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
 
         # consist of [target_net, evaluate_net]
@@ -75,6 +79,7 @@ class DeepQNetwork:
 
         w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
+        # 似乎这几个代码都是只有两个全连接层作为层
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
             e1 = tf.layers.dense(self.s, 20, tf.nn.relu, kernel_initializer=w_initializer,

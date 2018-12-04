@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 This part of code is the DQN brain, which is a brain of the agent.
 All decisions are made in here.
@@ -164,6 +167,7 @@ class DeepQNetwork:
 
         q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
 
+        # 似乎应该先看这个，解释一下为什么要copy
         """
         For example in this batch I have 2 samples and 3 actions:
         q_eval =

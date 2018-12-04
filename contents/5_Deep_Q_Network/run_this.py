@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from maze_env import Maze
 from RL_brain import DeepQNetwork
 
