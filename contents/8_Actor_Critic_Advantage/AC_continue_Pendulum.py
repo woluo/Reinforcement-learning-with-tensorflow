@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Actor-Critic with continuous action using TD-error as the Advantage, Reinforcement Learning.
 

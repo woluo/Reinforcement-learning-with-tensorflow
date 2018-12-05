@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Actor-Critic using TD-error as the Advantage, Reinforcement Learning.
 
@@ -43,6 +46,7 @@ class Actor(object):
         self.a = tf.placeholder(tf.int32, None, "act")
         self.td_error = tf.placeholder(tf.float32, None, "td_error")  # TD_error
 
+        # Actor负责输入当前状态，输出所有行为的概率
         with tf.variable_scope('Actor'):
             l1 = tf.layers.dense(
                 inputs=self.s,
@@ -64,6 +68,8 @@ class Actor(object):
 
         with tf.variable_scope('exp_v'):
             log_prob = tf.log(self.acts_prob[0, self.a])
+            # 这些都是推导出的结果，不是简单的臆测
+            # td_error由critic计算，传递给actor让其学习
             self.exp_v = tf.reduce_mean(log_prob * self.td_error)  # advantage (TD_error) guided loss
 
         with tf.variable_scope('train'):
@@ -75,6 +81,7 @@ class Actor(object):
         _, exp_v = self.sess.run([self.train_op, self.exp_v], feed_dict)
         return exp_v
 
+    # 这个代码要好好学学，依据概率随机选择行为
     def choose_action(self, s):
         s = s[np.newaxis, :]
         probs = self.sess.run(self.acts_prob, {self.s: s})   # get probabilities for all actions
@@ -89,7 +96,9 @@ class Critic(object):
         self.v_ = tf.placeholder(tf.float32, [1, 1], "v_next")
         self.r = tf.placeholder(tf.float32, None, 'r')
 
+        # 根据状态输出value
         with tf.variable_scope('Critic'):
+
             l1 = tf.layers.dense(
                 inputs=self.s,
                 units=20,  # number of hidden units
@@ -111,7 +120,9 @@ class Critic(object):
             )
 
         with tf.variable_scope('squared_TD_error'):
+            # 计算TD误差
             self.td_error = self.r + GAMMA * self.v_ - self.v
+            # 计算损失
             self.loss = tf.square(self.td_error)    # TD_error = (r+gamma*V_next) - V_eval
         with tf.variable_scope('train'):
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss)
@@ -166,4 +177,3 @@ for i_episode in range(MAX_EPISODE):
             if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True  # rendering
             print("episode:", i_episode, "  reward:", int(running_reward))
             break
-
