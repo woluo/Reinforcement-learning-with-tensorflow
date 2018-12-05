@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Deep Deterministic Policy Gradient (DDPG), Reinforcement Learning.
 DDPG is Actor Critic based algorithm.
@@ -41,9 +44,13 @@ ENV_NAME = 'Pendulum-v0'
 
 
 class Actor(object):
+
     def __init__(self, sess, action_dim, action_bound, learning_rate, replacement):
+
         self.sess = sess
+        # action的维数
         self.a_dim = action_dim
+        # action的范围
         self.action_bound = action_bound
         self.lr = learning_rate
         self.replacement = replacement
@@ -67,6 +74,7 @@ class Actor(object):
                                  for t, e in zip(self.t_params, self.e_params)]
 
     def _build_net(self, s, scope, trainable):
+        # 网络输出的直接是Action，而不再是分立Action的概率
         with tf.variable_scope(scope):
             init_w = tf.random_normal_initializer(0., 0.3)
             init_b = tf.constant_initializer(0.1)
@@ -91,6 +99,7 @@ class Actor(object):
 
     def choose_action(self, s):
         s = s[np.newaxis, :]    # single state
+        # 直接返回选择的行为
         return self.sess.run(self.a, feed_dict={S: s})[0]  # single action
 
     def add_grad_to_graph(self, a_grads):
@@ -108,8 +117,11 @@ class Actor(object):
 
 ###############################  Critic  ####################################
 
+# 由于是DDPG，确定性地输出一个行为，所以Critic可以同时接受S和A为参数计算其Value
 class Critic(object):
+
     def __init__(self, sess, state_dim, action_dim, learning_rate, gamma, replacement, a, a_):
+
         self.sess = sess
         self.s_dim = state_dim
         self.a_dim = action_dim

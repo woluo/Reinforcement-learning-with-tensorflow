@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Deep Deterministic Policy Gradient (DDPG), Reinforcement Learning.
 DDPG is Actor Critic based algorithm.
@@ -9,6 +12,8 @@ Using:
 tensorflow 1.0
 gym 0.8.0
 """
+
+# 将Actor和Critic中的内容写在一起了
 
 import tensorflow as tf
 import numpy as np
@@ -86,7 +91,9 @@ class DDPG(object):
         br = bt[:, -self.s_dim - 1: -self.s_dim]
         bs_ = bt[:, -self.s_dim:]
 
+        # 进行Actor的学习
         self.sess.run(self.atrain, {self.S: bs})
+        # 进行Critic的学习
         self.sess.run(self.ctrain, {self.S: bs, self.a: ba, self.R: br, self.S_: bs_})
 
     def store_transition(self, s, a, r, s_):

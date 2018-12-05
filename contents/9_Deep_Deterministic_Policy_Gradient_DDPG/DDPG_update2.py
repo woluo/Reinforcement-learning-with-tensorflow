@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Note: This is a updated version from my previous code,
 for the target network, I use moving average to soft replace target parameters instead using assign function.
@@ -13,6 +16,8 @@ Using:
 tensorflow 1.0
 gym 0.8.0
 """
+
+# 使用了一个类似记录trace的tensorflow函数来提升计算效率
 
 import tensorflow as tf
 import numpy as np
