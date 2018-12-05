@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Policy Gradient, Reinforcement Learning.
 
@@ -47,11 +50,16 @@ for i_episode in range(3000):
 
         RL.store_transition(observation, action, reward)
 
+        # 这个似乎有点Monte-Carlo的意思
+        # policy gradient 不是特别明显
+        # 只有在总结的时候进行学习
         if done:
             ep_rs_sum = sum(RL.ep_rs)
 
+            # 如果是第一次出现，直接初始化为本身
             if 'running_reward' not in globals():
                 running_reward = ep_rs_sum
+            # 否则，采用trace的方法记录其作用效果
             else:
                 running_reward = running_reward * 0.99 + ep_rs_sum * 0.01
             if running_reward > DISPLAY_REWARD_THRESHOLD: RENDER = True     # rendering

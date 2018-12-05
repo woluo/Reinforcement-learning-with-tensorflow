@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 This part of code is the reinforcement learning brain, which is a brain of the agent.
 All decisions are made in here.
@@ -20,10 +23,11 @@ tf.set_random_seed(1)
 
 
 class PolicyGradient:
+
     def __init__(
             self,
-            n_actions,
-            n_features,
+            n_actions,              # 行为的数目
+            n_features,             # 状态的维度，特征的数目
             learning_rate=0.01,
             reward_decay=0.95,
             output_graph=False,
@@ -48,10 +52,15 @@ class PolicyGradient:
         self.sess.run(tf.global_variables_initializer())
 
     def _build_net(self):
+
+        # 构建网络
         with tf.name_scope('inputs'):
+            # 状态的维数
             self.tf_obs = tf.placeholder(tf.float32, [None, self.n_features], name="observations")
             self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions_num")
             self.tf_vt = tf.placeholder(tf.float32, [None, ], name="actions_value")
+
+        # 两层网络
         # fc1
         layer = tf.layers.dense(
             inputs=self.tf_obs,
@@ -71,6 +80,7 @@ class PolicyGradient:
             name='fc2'
         )
 
+        # 输出行为的概率
         self.all_act_prob = tf.nn.softmax(all_act, name='act_prob')  # use softmax to convert to probability
 
         with tf.name_scope('loss'):
@@ -84,19 +94,25 @@ class PolicyGradient:
             self.train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
     def choose_action(self, observation):
+
+        # 输出当前状态下各个行为的概率
         prob_weights = self.sess.run(self.all_act_prob, feed_dict={self.tf_obs: observation[np.newaxis, :]})
+        # 依据概率随机选择行为
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
 
+    # 储存这次转变
     def store_transition(self, s, a, r):
         self.ep_obs.append(s)
         self.ep_as.append(a)
         self.ep_rs.append(r)
 
     def learn(self):
+
         # discount and normalize episode reward
         discounted_ep_rs_norm = self._discount_and_norm_rewards()
 
+        # 采用所有已经经历的数据进行训练（一个episode）
         # train on episode
         self.sess.run(self.train_op, feed_dict={
              self.tf_obs: np.vstack(self.ep_obs),  # shape=[None, n_obs]
@@ -108,9 +124,12 @@ class PolicyGradient:
         return discounted_ep_rs_norm
 
     def _discount_and_norm_rewards(self):
+
         # discount episode rewards
         discounted_ep_rs = np.zeros_like(self.ep_rs)
         running_add = 0
+
+        # 计算一个episode中，所有步的reward（根据递推公式）
         for t in reversed(range(0, len(self.ep_rs))):
             running_add = running_add * self.gamma + self.ep_rs[t]
             discounted_ep_rs[t] = running_add
@@ -119,6 +138,3 @@ class PolicyGradient:
         discounted_ep_rs -= np.mean(discounted_ep_rs)
         discounted_ep_rs /= np.std(discounted_ep_rs)
         return discounted_ep_rs
-
-
-
