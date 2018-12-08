@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 A simple version of Proximal Policy Optimization (PPO) using single thread.
 
