@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 This part of code is the Dyna-Q learning brain, which is a brain of the agent.
 All decisions and learning processes are made in here.
@@ -10,7 +13,7 @@ import pandas as pd
 
 
 class QLearningTable:
-    def __init__(self, actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9):
+    def __init__(self, actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.1):
         self.actions = actions  # a list
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -20,11 +23,14 @@ class QLearningTable:
     def choose_action(self, observation):
         self.check_state_exist(observation)
         # action selection
-        if np.random.uniform() < self.epsilon:
+        if np.random.uniform() < 1 - self.epsilon:
             # choose best action
-            state_action = self.q_table.ix[observation, :]
-            state_action = state_action.reindex(np.random.permutation(state_action.index))     # some actions have same value
-            action = state_action.argmax()
+            state_action = self.q_table.loc[observation]
+
+            # 这里采用这种写法是因为所有取最大值的行为应该有相同的概率被抽取到
+            # 采用idxmax无法达到这种要求
+            # some actions may have the same value, randomly choose on in these actions
+            action = np.random.choice(state_action[state_action == np.max(state_action)].index)
         else:
             # choose random action
             action = np.random.choice(self.actions)
@@ -34,10 +40,10 @@ class QLearningTable:
         self.check_state_exist(s_)
         q_predict = self.q_table.ix[s, a]
         if s_ != 'terminal':
-            q_target = r + self.gamma * self.q_table.ix[s_, :].max()  # next state is not terminal
+            q_target = r + self.gamma * self.q_table.loc[s_].max()  # next state is not terminal
         else:
             q_target = r  # next state is terminal
-        self.q_table.ix[s, a] += self.lr * (q_target - q_predict)  # update
+        self.q_table.loc[s, a] += self.lr * (q_target - q_predict)  # update
 
     def check_state_exist(self, state):
         if state not in self.q_table.index:
@@ -52,8 +58,10 @@ class QLearningTable:
 
 
 class EnvModel:
+    # 这里有点像DQN中replay的思想
     """Similar to the memory buffer in DQN, you can store past experiences in here.
     Alternatively, the model can generate next state and reward signal accurately."""
+
     def __init__(self, actions):
         # the simplest case is to think about the model is a memory which has all past transition information
         self.actions = actions
@@ -71,9 +79,9 @@ class EnvModel:
 
     def sample_s_a(self):
         s = np.random.choice(self.database.index)
-        a = np.random.choice(self.database.ix[s].dropna().index)    # filter out the None value
+        a = np.random.choice(self.database.loc[s].dropna().index)    # filter out the None value
         return s, a
 
     def get_r_s_(self, s, a):
-        r, s_ = self.database.ix[s, a]
+        r, s_ = self.database.loc[s, a]
         return r, s_

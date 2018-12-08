@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Simplest model-based RL, Dyna-Q.
 
@@ -27,6 +30,8 @@ def update():
 
             # use a model to output (r, s_) by inputting (s, a)
             # the model in dyna Q version is just like a memory replay buffer
+
+            # 每进行一步，根据已有模型多学几步
             env_model.store_transition(str(s), a, r, s_)
             for n in range(10):     # learn 10 more times using the env_model
                 ms, ma = env_model.sample_s_a()  # ms in here is a str
