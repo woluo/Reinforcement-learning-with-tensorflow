@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Asynchronous Advantage Actor Critic (A3C) with discrete action space, Reinforcement Learning.
 
@@ -46,9 +49,12 @@ class ACNet(object):
                     self.c_loss = tf.reduce_mean(tf.square(td))
 
                 with tf.name_scope('a_loss'):
+                    # 这里tf.one_hot指的是将分类转换为高维标签，从而便于计算
                     log_prob = tf.reduce_sum(
                         tf.log(self.a_prob) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
                         axis=1, keep_dims=True)
+
+                    # 这里是避免对td求梯度
                     exp_v = log_prob * tf.stop_gradient(td)
                     entropy = -tf.reduce_sum(self.a_prob * tf.log(self.a_prob + 1e-5),
                                              axis=1, keep_dims=True)  # encourage exploration

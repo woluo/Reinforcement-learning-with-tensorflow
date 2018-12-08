@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Asynchronous Advantage Actor Critic (A3C) with discrete action space, Reinforcement Learning.
 
